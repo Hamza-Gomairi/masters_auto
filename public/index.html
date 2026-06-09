@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proposition de membres de Jury - FSJES Tanger</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --primary: #0f4c81;
+      --primary-dark: #0b355a;
+      --danger: #b42318;
+      --success: #067647;
+      --border: #d0d5dd;
+      --background: #f5f7fb;
+      --card: #ffffff;
+      --text: #101828;
+      --muted: #667085;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--background);
+      color: var(--text);
+    }
+
+    .page {
+      min-height: 100vh;
+      padding: 32px 16px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .card {
+      width: min(920px, 100%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 20px 50px rgba(16, 24, 40, 0.08);
+      overflow: hidden;
+    }
+
+    .hero {
+      padding: 28px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #ffffff;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: clamp(24px, 4vw, 34px);
+    }
+
+    .hero p {
+      margin: 0;
+      opacity: 0.92;
+      line-height: 1.5;
+    }
+
+    form {
+      padding: 28px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 15px;
+      background: #ffffff;
+    }
+
+    input:focus,
+    select:focus {
+      outline: 3px solid rgba(15, 76, 129, 0.16);
+      border-color: var(--primary);
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .actions {
+      margin-top: 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      background: var(--primary);
+      color: #ffffff;
+      padding: 13px 20px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: var(--primary-dark);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.65;
+    }
+
+    .message {
+      margin-top: 18px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      display: none;
+      line-height: 1.45;
+    }
+
+    .message.error {
+      display: block;
+      color: var(--danger);
+      background: #fef3f2;
+      border: 1px solid #fecdca;
+    }
+
+    .message.success {
+      display: block;
+      color: var(--success);
+      background: #ecfdf3;
+      border: 1px solid #abefc6;
+    }
+
+    @media (max-width: 720px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero,
+      form {
+        padding: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="card">
+      <header class="hero">
+        <h1>Proposition de membres de Jury</h1>
+        <p>FSJES Tanger — génération automatique du formulaire officiel après vérification de l'éligibilité académique.</p>
+      </header>
+
+      <form id="juryForm">
+        <div class="grid">
+          <div class="field">
+            <label for="nom">Nom *</label>
+            <input id="nom" name="nom" type="text" autocomplete="family-name" required>
+          </div>
+
+          <div class="field">
+            <label for="prenom">Prénom *</label>
+            <input id="prenom" name="prenom" type="text" autocomplete="given-name" required>
+          </div>
+
+          <div class="field">
+            <label for="apogee">Code Apogée *</label>
+            <input id="apogee" name="apogee" type="text" inputmode="numeric" required>
+            <span class="hint">Mock MVP : un dernier chiffre 3 ou plus valide au moins 3 semestres.</span>
+          </div>
+
+          <div class="field">
+            <label for="telephone">N° de téléphone *</label>
+            <input id="telephone" name="telephone" type="tel" autocomplete="tel" required>
+          </div>
+
+          <div class="field full">
+            <label for="email">Email institutionnel *</label>
+            <input id="email" name="email" type="email" placeholder="exemple@etu.uae.ac.ma" pattern="^[a-zA-Z0-9._%+-]+@etu\.uae\.ac\.ma$" autocomplete="email" required>
+            <span class="hint">Format strict attendu : xxx@etu.uae.ac.ma</span>
+          </div>
+
+          <div class="field full">
+            <label for="master">Nom du Master *</label>
+            <select id="master" name="master" required>
+              <option value="">Chargement des masters...</option>
+            </select>
+          </div>
+
+          <div class="field full">
+            <label for="professeur">Professeur responsable *</label>
+            <input id="professeur" name="professeur" type="text" required>
+          </div>
+
+          <div class="field full">
+            <label for="theme">Master sur le thème *</label>
+            <input id="theme" name="theme" type="text" required>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="submitButton" type="submit">Valider et télécharger le PDF</button>
+          <span class="hint">Le PDF est téléchargé immédiatement si l'étudiant est éligible.</span>
+        </div>
+
+        <div id="message" class="message" role="status" aria-live="polite"></div>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById('juryForm');
+    const message = document.getElementById('message');
+    const submitButton = document.getElementById('submitButton');
+    const masterSelect = document.getElementById('master');
+
+    loadMasters();
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      clearMessage();
+
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+
+      const payload = Object.fromEntries(new FormData(form).entries());
+      submitButton.disabled = true;
+      submitButton.textContent = 'Validation en cours...';
+
+      try {
+        const response = await fetch('/api/validate-and-generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          const text = error.message || (Array.isArray(error.errors) ? error.errors.join(' ') : 'La génération du PDF a échoué.');
+          showMessage(text, 'error');
+          return;
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `proposition-jury-${payload.apogee}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        showMessage('PDF généré et téléchargé avec succès.', 'success');
+      } catch (error) {
+        showMessage('Impossible de contacter le serveur. Vérifiez que le backend est lancé.', 'error');
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Valider et télécharger le PDF';
+      }
+    });
+
+    async function loadMasters() {
+      try {
+        const response = await fetch('/api/masters');
+        const data = await response.json();
+        masterSelect.innerHTML = '<option value="">Sélectionner un Master</option>';
+
+        data.masters.forEach((master) => {
+          const option = document.createElement('option');
+          option.value = master;
+          option.textContent = master;
+          masterSelect.appendChild(option);
+        });
+      } catch (error) {
+        masterSelect.innerHTML = '<option value="">Erreur de chargement des masters</option>';
+      }
+    }
+
+    function showMessage(text, type) {
+      message.textContent = text;
+      message.className = `message ${type}`;
+    }
+
+    function clearMessage() {
+      message.textContent = '';
+      message.className = 'message';
+    }
+  </script>
+</body>
+</html>

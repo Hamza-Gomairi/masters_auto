@@ -1,0 +1,23 @@
+{
+  "records": {
+    "12121213": {
+      "status": "created",
+      "created": true,
+      "createdAt": "2026-06-08T11:23:35.909Z",
+      "lastAttemptAt": "2026-06-08T11:33:31.364Z",
+      "validatedSemesters": 3,
+      "reason": "PDF généré.",
+      "attestationCode": "1"
+    },
+    "14141213": {
+      "status": "created",
+      "created": true,
+      "createdAt": "2026-06-08T11:33:44.466Z",
+      "lastAttemptAt": "2026-06-08T11:34:39.636Z",
+      "validatedSemesters": 3,
+      "reason": "PDF généré.",
+      "attestationCode": "2"
+    }
+  },
+  "nextId": 3
+}

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administration - Attestations</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --primary: #0f4c81;
+      --primary-dark: #0b355a;
+      --danger: #b42318;
+      --success: #067647;
+      --border: #d0d5dd;
+      --background: #f5f7fb;
+      --card: #ffffff;
+      --text: #101828;
+      --muted: #667085;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--background);
+      color: var(--text);
+    }
+
+    .page {
+      min-height: 100vh;
+      padding: 32px 16px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .card {
+      width: min(920px, 100%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 20px 50px rgba(16, 24, 40, 0.08);
+      overflow: hidden;
+    }
+
+    .hero {
+      padding: 24px 28px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #ffffff;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: 26px;
+    }
+
+    .hero p {
+      margin: 10px 0 0;
+      opacity: 0.92;
+      line-height: 1.5;
+    }
+
+    .content {
+      padding: 28px;
+    }
+
+    label {
+      font-weight: 700;
+      font-size: 14px;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 15px;
+      background: #ffffff;
+    }
+
+    input:focus {
+      outline: 3px solid rgba(15, 76, 129, 0.16);
+      border-color: var(--primary);
+    }
+
+    .actions {
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      background: var(--primary);
+      color: #ffffff;
+      padding: 12px 18px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover { background: var(--primary-dark); }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.65;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .result {
+      margin-top: 18px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      display: none;
+    }
+
+    .row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+    }
+
+    .pill.success {
+      border-color: #abefc6;
+      background: #ecfdf3;
+      color: var(--success);
+    }
+
+    .pill.error {
+      border-color: #fecdca;
+      background: #fef3f2;
+      color: var(--danger);
+    }
+
+    .kv {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 8px 12px;
+      font-size: 14px;
+    }
+
+    .kv .k {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    @media (max-width: 720px) {
+      .hero, .content { padding: 22px; }
+      .kv { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="card">
+      <header class="hero">
+        <h1>Administration — Attestations</h1>
+        <p>Recherche par Code Apogée pour vérifier si l’étudiant a généré l’attestation depuis l’application, et voir son statut académique (mock).</p>
+      </header>
+
+      <div class="content">
+        <label for="apogee">Code Apogée</label>
+        <input id="apogee" type="text" inputmode="numeric" placeholder="Ex: 12121213">
+
+        <div class="actions">
+          <button id="btn" type="button">Rechercher</button>
+          <span class="hint">URL API: <code>/api/admin/attestation-status?apogee=...</code></span>
+        </div>
+
+        <div id="result" class="result" role="status" aria-live="polite"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const apogeeInput = document.getElementById('apogee');
+    const btn = document.getElementById('btn');
+    const result = document.getElementById('result');
+
+    btn.addEventListener('click', () => search());
+    apogeeInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') search();
+    });
+
+    async function search() {
+      const apogee = String(apogeeInput.value || '').trim();
+      result.style.display = 'none';
+      result.textContent = '';
+
+      if (!apogee) {
+        showText('Veuillez saisir un Code Apogée.');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Recherche...';
+
+      try {
+        const response = await fetch(`/api/admin/attestation-status?apogee=${encodeURIComponent(apogee)}`);
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          showText(data.message || 'Erreur lors de la recherche.');
+          return;
+        }
+
+        renderResult(data);
+      } catch (e) {
+        showText('Impossible de contacter le serveur.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Rechercher';
+      }
+    }
+
+    function showText(text) {
+      result.style.display = 'block';
+      result.textContent = text;
+    }
+
+    function renderResult(data) {
+      const status = String(data.status || 'unknown');
+      const pillClass = status === 'created' ? 'success' : (status === 'ineligible' ? 'error' : '');
+      const statusLabel = status === 'created'
+        ? 'Attestation générée'
+        : status === 'ineligible'
+          ? 'Non éligible (moins de 3 semestres)'
+          : status === 'invalid'
+            ? 'Formulaire invalide'
+            : status === 'not_found'
+              ? 'Aucune trace'
+              : 'Inconnu';
+
+      const created = Boolean(data.created);
+      const attestationCode = data.attestationCode || '-';
+      const createdAt = data.createdAt || '-';
+      const lastAttemptAt = data.lastAttemptAt || '-';
+      const validatedSemesters = (data.validatedSemesters ?? '-')
+      const reason = data.reason || '-';
+
+      result.style.display = 'block';
+      result.innerHTML = `
+        <div class="row">
+          <span class="pill ${pillClass}">${statusLabel}</span>
+        </div>
+        <div class="kv">
+          <div class="k">Code Apogée</div><div>${escapeHtml(data.apogee || '')}</div>
+          <div class="k">Code unique</div><div>${escapeHtml(String(attestationCode))}</div>
+          <div class="k">Attestation générée</div><div>${created ? 'Oui' : 'Non'}</div>
+          <div class="k">Date génération</div><div>${escapeHtml(createdAt)}</div>
+          <div class="k">Dernière tentative</div><div>${escapeHtml(lastAttemptAt)}</div>
+          <div class="k">Semestres validés (mock)</div><div>${escapeHtml(String(validatedSemesters))}</div>
+          <div class="k">Détail</div><div>${escapeHtml(reason)}</div>
+        </div>
+      `;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+  </script>
+</body>
+</html>

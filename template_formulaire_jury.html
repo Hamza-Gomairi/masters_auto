@@ -1,0 +1,368 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Proposition de membres de Jury - FSJES Tanger</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm 15mm;
+            background-color: #ffffff;
+            @bottom-right {
+                content: "Page 1/1";
+                font-family: Arial, sans-serif;
+                font-size: 9pt;
+                color: #777777;
+            }
+        }
+        
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #000000;
+            line-height: 1.3;
+            font-size: 11pt;
+        }
+
+        /* En-tête officiel */
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+
+        .header-table td {
+            vertical-align: middle;
+            border: 1px solid #000000;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .header-left {
+            width: 35%;
+            font-size: 10pt;
+            font-weight: bold;
+        }
+
+        .header-center {
+            width: 30%;
+        }
+
+        .header-center img {
+            max-height: 105px;
+            width: auto;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .header-right {
+            width: 35%;
+            font-size: 11pt;
+            font-weight: bold;
+            direction: rtl;
+            font-family: 'Times New Roman', Times, serif;
+        }
+
+        /* Date et Destination */
+        .date-section {
+            text-align: left;
+            margin-bottom: 15px;
+            font-weight: bold;
+            padding-left: 5px;
+        }
+
+        .reference-section {
+            float: right;
+            text-align: right;
+            font-weight: normal;
+            font-size: 9.5pt;
+            margin-bottom: 15px;
+            padding-right: 5px;
+        }
+
+        .destination-section {
+            text-align: center;
+            font-weight: bold;
+            font-size: 12pt;
+            margin-bottom: 30px;
+            line-height: 1.4;
+        }
+
+        /* Objet */
+        .object-section {
+            text-align: center;
+            font-weight: bold;
+            font-size: 12pt;
+            margin-bottom: 25px;
+        }
+        
+        .object-box {
+            display: inline-block;
+            border: 1.5px solid #000000;
+            padding: 6px 20px;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+
+        /* Corps de la lettre */
+        .intro-text {
+            margin-bottom: 20px;
+            font-size: 11pt;
+        }
+
+        /* Informations étudiant */
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            margin-left: 10px;
+        }
+
+        .info-table td {
+            padding: 6px 4px;
+            vertical-align: bottom;
+        }
+
+        .info-label {
+            width: 25%;
+            font-weight: bold;
+            font-size: 11pt;
+        }
+
+        .info-value {
+            width: 75%;
+            font-size: 11pt;
+            padding-left: 10px;
+        }
+
+        .filled-value {
+            font-family: 'Times New Roman', Times, serif;
+            font-style: italic;
+        }
+
+        .theme-section {
+            margin-top: 15px;
+            margin-bottom: 20px;
+        }
+
+        .theme-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .theme-line {
+            height: 10px;
+            margin-bottom: 5px;
+        }
+
+        .direction-section {
+            font-weight: bold;
+            margin-bottom: 25px;
+        }
+        
+        .direction-line {
+            display: inline-block;
+            width: 65%;
+            border-bottom: 1px dotted #000000;
+            vertical-align: bottom;
+            margin-left: 5px;
+            height: 18px;
+        }
+
+        /* Section Jury */
+        .jury-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .jury-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            line-height: 1.1;
+        }
+
+        .jury-table td {
+            padding: 4px 4px;
+            vertical-align: bottom;
+        }
+
+        .jury-label {
+            width: 16%;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .jury-dot {
+            width: 64%;
+            border-bottom: 1px dotted #000000;
+        }
+
+        .jury-role {
+            width: 20%;
+            text-align: right;
+            font-weight: bold;
+            padding-right: 10px;
+        }
+
+        /* Salutations */
+        .salutation {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 40px;
+            font-size: 11pt;
+        }
+
+        /* Signatures */
+        .signature-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .signature-table td {
+            width: 50%;
+            text-align: center;
+            font-weight: bold;
+            font-size: 11pt;
+            vertical-align: top;
+            padding-bottom: 60px;
+        }
+
+        .doyen-row {
+            text-align: center;
+            font-weight: bold;
+            font-size: 11pt;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Table d'en-tête officielle -->
+    <table class="header-table">
+        <tr>
+            <td class="header-left">
+                Université Abdelmalek Essaâdi<br>
+                Faculté des Sciences Juridiques,<br>
+                Économiques & Sociales<br>
+                - Tanger -
+            </td>
+            <td class="header-center">
+                <img src="[DYNAMIC_LOGO_SRC]" alt="Logo FSJES Tanger">
+            </td>
+            <td class="header-right">
+                جامعة عبد المالك السعدي<br>
+                كلية العلوم القانونية والاقتصادية<br>
+                والاجتماعية<br>
+                - طنجة -
+            </td>
+        </tr>
+    </table>
+
+    <div class="reference-section">
+        Réf : [DYNAMIC_ATTESTATION_CODE]
+    </div>
+
+    <div class="date-section">
+        Tanger le : [DYNAMIC_DATE]
+    </div>
+
+    <div class="destination-section">
+        Monsieur le Doyen de la Faculté des Sciences Juridiques Économiques et<br>Sociales - Tanger
+    </div>
+
+    <div class="object-section">
+        <div class="object-box">
+            Objet : proposition de membres de Jury<br>
+            <span style="font-size: 10pt; font-weight: normal;">Master : [DYNAMIC_MASTER_NAME]</span>
+        </div>
+    </div>
+
+    <div class="intro-text">
+        J'ai l'honneur de porter à votre connaissance que l'étudiant (e) :
+    </div>
+
+    <!-- Infos Étudiant -->
+    <table class="info-table">
+        <tr>
+            <td class="info-label">Nom et prénom :</td>
+            <td class="info-value"><span class="filled-value">[DYNAMIC_NOM_PRENOM]</span></td>
+        </tr>
+        <tr>
+            <td class="info-label">N° d'inscription :</td>
+            <td class="info-value"><span class="filled-value">[DYNAMIC_APOGEE]</span></td>
+        </tr>
+        <tr>
+            <td class="info-label">N° de Téléphone :</td>
+            <td class="info-value"><span class="filled-value">[DYNAMIC_TELEPHONE]</span></td>
+        </tr>
+        <tr>
+            <td class="info-label">E-mail Inst. :</td>
+            <td class="info-value"><span class="filled-value">[DYNAMIC_EMAIL]</span></td>
+        </tr>
+    </table>
+
+    <!-- Thème -->
+    <div class="theme-section">
+        <div class="theme-title">a préparé un mémoire de Master sur le thème :</div>
+        <div><span class="filled-value">[DYNAMIC_THEME]</span></div>
+        <div class="theme-line"></div>
+    </div>
+
+    <div class="direction-section">
+        Sous la direction du professeur : <span class="filled-value">[DYNAMIC_PROF_RESPONSABLE]</span>
+    </div>
+
+    <div class="jury-title">
+        De ce fait, je demande votre accord pour désigner les membres de jury ci-après :
+    </div>
+
+    <!-- Tableau du Jury -->
+    <table class="jury-table">
+        <tr>
+            <td class="jury-label">Professeur :</td>
+            <td class="jury-dot"></td>
+            <td class="jury-role">--- président</td>
+        </tr>
+        <tr>
+            <td class="jury-label">Professeur :</td>
+            <td class="jury-dot"></td>
+            <td class="jury-role">--- membre</td>
+        </tr>
+        <tr>
+            <td class="jury-label">Professeur :</td>
+            <td class="jury-dot"></td>
+            <td class="jury-role">--- membre</td>
+        </tr>
+        <tr>
+            <td class="jury-label">Professeur :</td>
+            <td class="jury-dot"></td>
+            <td class="jury-role">--- membre</td>
+        </tr>
+    </table>
+
+    <div class="salutation">
+        Veuillez agréer, Monsieur le Doyen, mes salutations les plus respectueuses.
+    </div>
+
+    <!-- Zone de validation et signatures -->
+    <table class="signature-table">
+        <tr>
+            <td>Directeur de recherche</td>
+            <td>Responsable du Master</td>
+        </tr>
+    </table>
+
+    <div class="doyen-row">
+        Doyen
+    </div>
+
+</body>
+</html>
