@@ -192,9 +192,8 @@
           </div>
 
           <div class="field">
-            <label for="apogee">Code Apogée *</label>
-            <input id="apogee" name="apogee" type="text" inputmode="numeric" required>
-            <span class="hint">Mock MVP : un dernier chiffre 3 ou plus valide au moins 3 semestres.</span>
+            <label for="cne">CNE *</label>
+            <input id="cne" name="cne" type="text" required>
           </div>
 
           <div class="field">
@@ -203,8 +202,8 @@
           </div>
 
           <div class="field full">
-            <label for="email">Email institutionnel *</label>
-            <input id="email" name="email" type="email" placeholder="exemple@etu.uae.ac.ma" pattern="^[a-zA-Z0-9._%+-]+@etu\.uae\.ac\.ma$" autocomplete="email" required>
+            <label for="email">Email institutionnel</label>
+            <input id="email" name="email" type="email" placeholder="exemple@etu.uae.ac.ma" pattern="^[a-zA-Z0-9._%+-]+@etu\.uae\.ac\.ma$" autocomplete="email">
             <span class="hint">Format strict attendu : xxx@etu.uae.ac.ma</span>
           </div>
 
@@ -221,7 +220,7 @@
           </div>
 
           <div class="field full">
-            <label for="theme">Master sur le thème *</label>
+            <label for="theme">Mémoire du Master sous le thème *</label>
             <input id="theme" name="theme" type="text" required>
           </div>
         </div>
@@ -277,7 +276,7 @@
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `proposition-jury-${payload.apogee}.pdf`;
+        link.download = `proposition-jury-${payload.cne}.pdf`;
         document.body.appendChild(link);
         link.click();
         link.remove();

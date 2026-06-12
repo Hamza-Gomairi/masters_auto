@@ -22,12 +22,29 @@ let logoDataUrlPromise;
 let adminDbWriteChain = Promise.resolve();
 
 const masters = [
-  'Master Droit des Affaires',
-  'Master Droit Public et Gouvernance',
-  'Master Sciences Économiques et Gestion',
-  'Master Management et Stratégie des Organisations',
-  'Master Finance, Audit et Contrôle de Gestion',
-  'Master Marketing et Commerce International'
+  "Master en Économie de Développement Durable et d'Innovation",
+  'Management des ressources humaines et de la qualité',
+  'LOGISTIQUE PORTUAIRE ET TRANSPORT INTERNATIONAL-LPTI-',
+  'FINANCE FISCALITÉ ET COMPTABILITÉ',
+  "Intelligence Artificielle pour l'Economie Numérique et la Gestion",
+  'DROIT PUBLIC DES AFFAIRES ET DE COMMERCE INTERNATIONAL',
+  'Droit international public',
+  'DROIT DES AFFAIRES ET E.BUSINESS',
+  'القانون والعلوم الإدارية والمالية للتنمية',
+  'حقوق الإنسانوالتقاضي الدولي',
+  'قانون المنازعات',
+  'المهن القانونية والقضائيةوالتحولات الاقتصادية والرقمية',
+  'الدراسات العقارية والتوثيق الرقمي',
+  'النظام الجمركي ومنازعات الاستثمار',
+  'القانون المدني والأعمال والمعاملات الائتمانية',
+  'السياسةالجنائية ورصد وتحليل الظاهرة الإجرامية',
+  'المنازعاتالمدنيةوالتجارية',
+  'القانون المقارن للأعمال',
+  'المساطر القانونية والوسائل البديلة لتسوية المنازعات',
+  'قانون الاستثمار وآليات تدبير المنازعات',
+  'قوانين التجارة والاعمال والتحول الرقمي',
+  'المنازعات العقدية والتكنولوجيات الحديثة',
+  'القانون الجنائي للأعمال والعدالة الرقمية'
 ];
 
 app.use(cors());
@@ -49,17 +66,17 @@ app.get('/api/masters', (req, res) => {
 
 app.get('/api/admin/attestation-status', async (req, res) => {
   try {
-    const apogee = String(req.query.apogee || '').trim();
+    const cne = String(req.query.cne || req.query.apogee || '').trim();
 
-    if (!apogee) {
-      return res.status(400).json({ message: 'Le Code Apogée est obligatoire.' });
+    if (!cne) {
+      return res.status(400).json({ message: 'Le CNE est obligatoire.' });
     }
 
-    const record = await getAdminRecord(apogee);
+    const record = await getAdminRecord(cne);
 
     if (!record) {
       return res.json({
-        apogee,
+        cne,
         status: 'not_found',
         created: false,
         createdAt: null,
@@ -69,7 +86,7 @@ app.get('/api/admin/attestation-status', async (req, res) => {
       });
     }
 
-    return res.json({ apogee, ...record });
+    return res.json({ cne, ...record });
   } catch (error) {
     console.error('Erreur /api/admin/attestation-status:', error);
     return res.status(500).json({ message: 'Erreur interne.' });
@@ -82,8 +99,8 @@ app.post('/api/validate-and-generate', async (req, res) => {
     const validationErrors = validateFormData(formData);
 
     if (validationErrors.length > 0) {
-      if (formData.apogee) {
-        await upsertAdminRecord(formData.apogee, {
+      if (formData.cne) {
+        await upsertAdminRecord(formData.cne, {
           status: 'invalid',
           created: false,
           validatedSemesters: null,
@@ -93,10 +110,10 @@ app.post('/api/validate-and-generate', async (req, res) => {
       return res.status(422).json({ errors: validationErrors });
     }
 
-    const eligibility = await mockCheckApogeeEligibility(formData.apogee);
+    const eligibility = await mockCheckApogeeEligibility(formData.cne);
 
     if (eligibility.validatedSemesters < 3) {
-      await upsertAdminRecord(formData.apogee, {
+      await upsertAdminRecord(formData.cne, {
         status: 'ineligible',
         created: false,
         validatedSemesters: eligibility.validatedSemesters,
@@ -107,12 +124,12 @@ app.post('/api/validate-and-generate', async (req, res) => {
 
     const html = await renderTemplate(formData);
     const pdf = await generatePdf(html);
-    const fileName = `proposition-jury-${safeFileName(formData.apogee)}.pdf`;
+    const fileName = `proposition-jury-${safeFileName(formData.cne)}.pdf`;
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
 
-    await upsertAdminRecord(formData.apogee, {
+    await upsertAdminRecord(formData.cne, {
       status: 'created',
       created: true,
       validatedSemesters: eligibility.validatedSemesters,
@@ -123,9 +140,9 @@ app.post('/api/validate-and-generate', async (req, res) => {
   } catch (error) {
     console.error('Erreur /api/validate-and-generate:', error);
 
-    const maybeApogee = String(req?.body?.apogee || '').trim();
-    if (maybeApogee) {
-      await upsertAdminRecord(maybeApogee, {
+    const maybeCne = String(req?.body?.cne || req?.body?.apogee || '').trim();
+    if (maybeCne) {
+      await upsertAdminRecord(maybeCne, {
         status: 'error',
         created: false,
         validatedSemesters: null,
@@ -202,7 +219,7 @@ function normalizeFormData(body) {
   return {
     nom: String(body.nom || '').trim(),
     prenom: String(body.prenom || '').trim(),
-    apogee: String(body.apogee || '').trim(),
+    cne: String(body.cne || body.apogee || '').trim(),
     telephone: String(body.telephone || '').trim(),
     email: String(body.email || '').trim().toLowerCase(),
     master: String(body.master || '').trim(),
@@ -217,9 +234,8 @@ function validateFormData(data) {
 
   if (!data.nom) errors.push('Le nom est obligatoire.');
   if (!data.prenom) errors.push('Le prénom est obligatoire.');
-  if (!data.apogee) errors.push('Le Code Apogée est obligatoire.');
+  if (!data.cne) errors.push('Le CNE est obligatoire.');
   if (!data.telephone) errors.push('Le numéro de téléphone est obligatoire.');
-  if (!data.email) errors.push("L'email institutionnel est obligatoire.");
   if (data.email && !emailPattern.test(data.email)) errors.push("L'email doit respecter le format xxx@etu.uae.ac.ma.");
   if (!data.master) errors.push('Le nom du Master est obligatoire.');
   if (data.master && !masters.includes(data.master)) errors.push('Le Master sélectionné est invalide.');
@@ -245,7 +261,7 @@ async function renderTemplate(data) {
   const fullName = `${data.nom} ${data.prenom}`.trim();
   const today = new Intl.DateTimeFormat('fr-FR').format(new Date());
   const logoDataUrl = await loadLogoDataUrl();
-  const attestationCode = data.apogee ? await getOrAssignAttestationCode(data.apogee) : '';
+  const attestationCode = data.cne ? await getOrAssignAttestationCode(data.cne) : '';
 
   return template
     .replaceAll('[DYNAMIC_LOGO_SRC]', logoDataUrl)
@@ -253,7 +269,7 @@ async function renderTemplate(data) {
     .replaceAll('[DYNAMIC_DATE]', escapeHtml(today))
     .replaceAll('[DYNAMIC_MASTER_NAME]', escapeHtml(data.master))
     .replaceAll('[DYNAMIC_NOM_PRENOM]', escapeHtml(fullName))
-    .replaceAll('[DYNAMIC_APOGEE]', escapeHtml(data.apogee))
+    .replaceAll('[DYNAMIC_CNE]', escapeHtml(data.cne))
     .replaceAll('[DYNAMIC_TELEPHONE]', escapeHtml(data.telephone))
     .replaceAll('[DYNAMIC_EMAIL]', escapeHtml(data.email))
     .replaceAll('[DYNAMIC_PROF_RESPONSABLE]', escapeHtml(data.professeur))

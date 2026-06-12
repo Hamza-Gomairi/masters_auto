@@ -183,12 +183,12 @@
       </header>
 
       <div class="content">
-        <label for="apogee">Code Apogée</label>
-        <input id="apogee" type="text" inputmode="numeric" placeholder="Ex: 12121213">
+        <label for="cne">CNE</label>
+        <input id="cne" type="text" placeholder="Ex: 12121213">
 
         <div class="actions">
           <button id="btn" type="button">Rechercher</button>
-          <span class="hint">URL API: <code>/api/admin/attestation-status?apogee=...</code></span>
+          <span class="hint">URL API: <code>/api/admin/attestation-status?cne=...</code></span>
         </div>
 
         <div id="result" class="result" role="status" aria-live="polite"></div>
@@ -197,22 +197,22 @@
   </main>
 
   <script>
-    const apogeeInput = document.getElementById('apogee');
+    const cneInput = document.getElementById('cne');
     const btn = document.getElementById('btn');
     const result = document.getElementById('result');
 
     btn.addEventListener('click', () => search());
-    apogeeInput.addEventListener('keydown', (e) => {
+    cneInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') search();
     });
 
     async function search() {
-      const apogee = String(apogeeInput.value || '').trim();
+      const cne = String(cneInput.value || '').trim();
       result.style.display = 'none';
       result.textContent = '';
 
-      if (!apogee) {
-        showText('Veuillez saisir un Code Apogée.');
+      if (!cne) {
+        showText('Veuillez saisir un CNE.');
         return;
       }
 
@@ -220,7 +220,7 @@
       btn.textContent = 'Recherche...';
 
       try {
-        const response = await fetch(`/api/admin/attestation-status?apogee=${encodeURIComponent(apogee)}`);
+        const response = await fetch(`/api/admin/attestation-status?cne=${encodeURIComponent(cne)}`);
         const data = await response.json().catch(() => ({}));
 
         if (!response.ok) {
@@ -268,7 +268,7 @@
           <span class="pill ${pillClass}">${statusLabel}</span>
         </div>
         <div class="kv">
-          <div class="k">Code Apogée</div><div>${escapeHtml(data.apogee || '')}</div>
+          <div class="k">CNE</div><div>${escapeHtml(data.cne || data.apogee || '')}</div>
           <div class="k">Code unique</div><div>${escapeHtml(String(attestationCode))}</div>
           <div class="k">Attestation générée</div><div>${created ? 'Oui' : 'Non'}</div>
           <div class="k">Date génération</div><div>${escapeHtml(createdAt)}</div>
