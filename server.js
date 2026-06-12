@@ -301,9 +301,33 @@ async function loadLogoDataUrl() {
   return logoDataUrlPromise;
 }
 
+async function resolveChromeExecutablePath() {
+  const candidates = [
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    process.env.CHROME_BIN,
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/google-chrome',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/chromium'
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    try {
+      await fs.access(candidate);
+      return candidate;
+    } catch {
+      // ignore
+    }
+  }
+
+  return undefined;
+}
+
 async function generatePdf(html) {
+  const executablePath = await resolveChromeExecutablePath();
   const browser = await puppeteer.launch({
     headless: 'new',
+    ...(executablePath ? { executablePath } : {}),
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
 
