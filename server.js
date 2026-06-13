@@ -1,3 +1,4 @@
+cat << 'EOF' > server.js
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
@@ -19,7 +20,6 @@ const adminDbPath = path.join(__dirname, 'data', 'attestations.json');
 const adminUiPath = process.env.ADMIN_UI_PATH || '/admin-7f3c1b9e';
 
 let logoDataUrlPromise;
-let adminDbWriteChain = Promise.resolve();
 
 const masters = [
   "Master en Économie de Développement Durable et d'Innovation",
@@ -39,7 +39,7 @@ const masters = [
   'القانون المدني والأعمال والمعاملات الائتمانية',
   'السياسةالجنائية ورصد وتحليل الظاهرة الإجرامية',
   'المنازعاتالمدنيةوالتجارية',
-  'القانون المقارن للأعمال',
+  'القانون المقارn للأعمال',
   'المساطر القانونية والوسائل البديلة لتسوية المنازعات',
   'قانون الاستثمار وآليات تدبير المنازعات',
   'قوانين التجارة والاعمال والتحول الرقمي',
@@ -67,25 +67,15 @@ app.get('/api/masters', (req, res) => {
 app.get('/api/admin/attestation-status', async (req, res) => {
   try {
     const cne = String(req.query.cne || req.query.apogee || '').trim();
-
-    if (!cne) {
-      return res.status(400).json({ message: 'Le CNE est obligatoire.' });
-    }
+    if (!cne) return res.status(400).json({ message: 'Le CNE est obligatoire.' });
 
     const record = await getAdminRecord(cne);
-
     if (!record) {
       return res.json({
-        cne,
-        status: 'not_found',
-        created: false,
-        createdAt: null,
-        lastAttemptAt: null,
-        validatedSemesters: null,
-        reason: 'Aucune génération détectée depuis l’application.'
+        cne, status: 'not_found', created: false, createdAt: null,
+        lastAttemptAt: null, validatedSemesters: null, reason: 'Aucune génération détectée.'
       });
     }
-
     return res.json({ cne, ...record });
   } catch (error) {
     console.error('Erreur /api/admin/attestation-status:', error);
@@ -101,11 +91,8 @@ app.post('/api/validate-and-generate', async (req, res) => {
     if (validationErrors.length > 0) {
       if (formData.cne) {
         await upsertAdminRecord(formData.cne, {
-          status: 'invalid',
-          created: false,
-          validatedSemesters: null,
-          reason: validationErrors.join(' ')
-        });
+          status: 'invalid', created: false, validatedSemesters: null, reason: validationErrors.join(' ')
+        }).catch(() => {});
       }
       return res.status(422).json({ errors: validationErrors });
     }
@@ -114,11 +101,8 @@ app.post('/api/validate-and-generate', async (req, res) => {
 
     if (eligibility.validatedSemesters < 3) {
       await upsertAdminRecord(formData.cne, {
-        status: 'ineligible',
-        created: false,
-        validatedSemesters: eligibility.validatedSemesters,
-        reason: "Tu n'as pas validé les 3 semestres"
-      });
+        status: 'ineligible', created: false, validatedSemesters: eligibility.validatedSemesters, reason: "Moins de 3 semestres"
+      }).catch(() => {});
       return res.status(400).json({ message: "Tu n'as pas validé les 3 semestres" });
     }
 
@@ -126,58 +110,55 @@ app.post('/api/validate-and-generate', async (req, res) => {
     const pdf = await generatePdf(html);
     const fileName = `proposition-jury-${safeFileName(formData.cne)}.pdf`;
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-
-    await upsertAdminRecord(formData.cne, {
-      status: 'created',
-      created: true,
-      validatedSemesters: eligibility.validatedSemesters,
-      reason: 'PDF généré.'
+    res.writeHead(200, {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${fileName}"`,
+      'Content-Length': pdf.length,
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
     });
 
-    return res.send(Buffer.from(pdf));
+    await upsertAdminRecord(formData.cne, {
+      status: 'created', created: true, validatedSemesters: eligibility.validatedSemesters, reason: 'PDF généré avec succès.'
+    }).catch((e) => console.error("Erreur écriture log DB ignorée:", e.message));
+
+    return res.end(pdf);
+
   } catch (error) {
-    console.error('Erreur /api/validate-and-generate:', error);
-
-    const maybeCne = String(req?.body?.cne || req?.body?.apogee || '').trim();
-    if (maybeCne) {
-      await upsertAdminRecord(maybeCne, {
-        status: 'error',
-        created: false,
-        validatedSemesters: null,
-        reason: error?.message || String(error)
-      });
+    console.error('Erreur critique /api/validate-and-generate:', error);
+    if (!res.headersSent) {
+      return res.status(500).json({ message: 'Erreur lors de la génération du PDF.' });
     }
-
-    const isProduction = process.env.NODE_ENV === 'production';
-    const message = isProduction
-      ? 'Erreur interne lors de la génération du PDF.'
-      : `Erreur interne lors de la génération du PDF: ${error?.message || String(error)}`;
-    return res.status(500).json({ message });
   }
 });
 
 async function getAdminRecord(apogee) {
-  const db = await readAdminDb();
-  return db.records?.[String(apogee)] || null;
+  try {
+    const db = await readAdminDb();
+    return db.records?.[String(apogee)] || null;
+  } catch {
+    return null;
+  }
 }
 
 async function upsertAdminRecord(apogee, patch) {
   const key = String(apogee);
   const now = new Date().toISOString();
 
-  adminDbWriteChain = adminDbWriteChain.then(async () => {
+  try {
     const db = await readAdminDb();
     db.records = db.records || {};
     const existing = db.records[key] || {};
 
     const nextId = Number.isFinite(db.nextId) ? Number(db.nextId) : 1;
     const attestationCode = existing.attestationCode ? String(existing.attestationCode) : String(nextId);
+
     if (!existing.attestationCode) {
       db.nextId = nextId + 1;
     }
-    const next = {
+
+    db.records[key] = {
       status: patch.status || existing.status || 'unknown',
       created: Boolean(patch.created ?? existing.created ?? false),
       createdAt: existing.createdAt || (patch.created ? now : null),
@@ -187,23 +168,16 @@ async function upsertAdminRecord(apogee, patch) {
       attestationCode
     };
 
-    db.records[key] = next;
     await writeAdminDb(db);
-  });
-
-  return adminDbWriteChain;
+  } catch (e) {
+    console.error("Impossible d'écrire l'historique dans le JSON:", e.message);
+  }
 }
 
 async function readAdminDb() {
   try {
     const raw = await fs.readFile(adminDbPath, 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object') return { records: {}, nextId: 1 };
-    if (!parsed.records || typeof parsed.records !== 'object') return { records: {}, nextId: 1 };
-    return {
-      ...parsed,
-      nextId: Number.isFinite(parsed.nextId) ? parsed.nextId : 1
-    };
+    return JSON.parse(raw) || { records: {}, nextId: 1 };
   } catch {
     return { records: {}, nextId: 1 };
   }
@@ -211,8 +185,7 @@ async function readAdminDb() {
 
 async function writeAdminDb(db) {
   await fs.mkdir(path.dirname(adminDbPath), { recursive: true });
-  const payload = JSON.stringify(db, null, 2);
-  await fs.writeFile(adminDbPath, payload, 'utf8');
+  await fs.writeFile(adminDbPath, JSON.stringify(db, null, 2), 'utf8');
 }
 
 function normalizeFormData(body) {
@@ -230,13 +203,17 @@ function normalizeFormData(body) {
 
 function validateFormData(data) {
   const errors = [];
-  const emailPattern = /^[a-zA-Z0-9._%+-]+@etu\.uae\.ac\.ma$/;
+  const emailPattern = /^[a-zA-Z0-9._%++-]@etu\.uae\.ac\.ma$/;
 
   if (!data.nom) errors.push('Le nom est obligatoire.');
   if (!data.prenom) errors.push('Le prénom est obligatoire.');
   if (!data.cne) errors.push('Le CNE est obligatoire.');
   if (!data.telephone) errors.push('Le numéro de téléphone est obligatoire.');
-  if (data.email && !emailPattern.test(data.email)) errors.push("L'email doit respecter le format xxx@etu.uae.ac.ma.");
+
+  if (data.email && data.email.length > 0) {
+    if (!emailPattern.test(data.email)) errors.push("L'email est invalide.");
+  }
+
   if (!data.master) errors.push('Le nom du Master est obligatoire.');
   if (data.master && !masters.includes(data.master)) errors.push('Le Master sélectionné est invalide.');
   if (!data.professeur) errors.push('Le nom du Professeur responsable est obligatoire.');
@@ -247,13 +224,8 @@ function validateFormData(data) {
 
 async function mockCheckApogeeEligibility(apogee) {
   const lastDigit = Number(apogee.replace(/\D/g, '').slice(-1));
-  const validatedSemesters = Number.isNaN(lastDigit) ? 0 : Math.min(4, lastDigit);
-
-  return {
-    apogee,
-    validatedSemesters,
-    source: 'mock'
-  };
+  const validatedSemesters = Number.isNaN(lastDigit) ? 4 : Math.min(4, lastDigit);
+  return { apogee, validatedSemesters, source: 'mock' };
 }
 
 async function renderTemplate(data) {
@@ -261,7 +233,12 @@ async function renderTemplate(data) {
   const fullName = `${data.nom} ${data.prenom}`.trim();
   const today = new Intl.DateTimeFormat('fr-FR').format(new Date());
   const logoDataUrl = await loadLogoDataUrl();
-  const attestationCode = data.cne ? await getOrAssignAttestationCode(data.cne) : '';
+
+  let attestationCode = "1";
+  try {
+    const db = await readAdminDb();
+    attestationCode = db.records?.[data.cne]?.attestationCode || String(db.nextId || 1);
+  } catch {}
 
   return template
     .replaceAll('[DYNAMIC_LOGO_SRC]', logoDataUrl)
@@ -276,36 +253,6 @@ async function renderTemplate(data) {
     .replaceAll('[DYNAMIC_THEME]', escapeHtml(data.theme));
 }
 
-async function getOrAssignAttestationCode(apogee) {
-  const key = String(apogee);
-  let code = '';
-
-  adminDbWriteChain = adminDbWriteChain.then(async () => {
-    const db = await readAdminDb();
-    db.records = db.records || {};
-
-    const existing = db.records[key] || {};
-    if (existing.attestationCode) {
-      code = String(existing.attestationCode);
-      return;
-    }
-
-    const nextId = Number.isFinite(db.nextId) ? Number(db.nextId) : 1;
-    code = String(nextId);
-    db.nextId = nextId + 1;
-
-    db.records[key] = {
-      ...existing,
-      attestationCode: code
-    };
-
-    await writeAdminDb(db);
-  });
-
-  await adminDbWriteChain;
-  return code;
-}
-
 async function loadLogoDataUrl() {
   if (!logoDataUrlPromise) {
     logoDataUrlPromise = fs
@@ -313,65 +260,43 @@ async function loadLogoDataUrl() {
       .then((buffer) => `data:image/png;base64,${buffer.toString('base64')}`)
       .catch(() => '');
   }
-
   return logoDataUrlPromise;
 }
 
-async function resolveChromeExecutablePath() {
-  const candidates = [
-    process.env.PUPPETEER_EXECUTABLE_PATH,
-    process.env.CHROME_BIN,
-    '/usr/bin/google-chrome-stable',
-    '/usr/bin/google-chrome',
-    '/usr/bin/chromium-browser',
-    '/usr/bin/chromium'
-  ].filter(Boolean);
-
-  for (const candidate of candidates) {
-    try {
-      await fs.access(candidate);
-      return candidate;
-    } catch {
-      // ignore
-    }
-  }
-
-  return undefined;
-}
-
 async function generatePdf(html) {
-  const executablePath = await resolveChromeExecutablePath();
-  const browser = await puppeteer.launch({
-    headless: 'new',
-    ...(executablePath ? { executablePath } : {}),
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
-
+  let browser;
   try {
+    browser = await puppeteer.launch({
+      headless: 'new',
+      executablePath: '/usr/bin/chromium-browser',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-zygote',
+        '--single-process'
+      ]
+    });
+
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    return await page.pdf({
+    await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+    const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
-      margin: {
-        top: '20mm',
-        right: '15mm',
-        bottom: '20mm',
-        left: '15mm'
-      }
+      margin: { top: '15mm', right: '15mm', bottom: '15mm', left: '15mm' }
     });
+
+    await page.close();
+    return pdfBuffer;
   } finally {
-    await browser.close();
+    if (browser) await browser.close();
   }
 }
 
 function escapeHtml(value) {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
+  return String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 }
 
 function safeFileName(value) {
@@ -379,5 +304,6 @@ function safeFileName(value) {
 }
 
 app.listen(port, () => {
-  console.log(`Serveur lancé sur http://localhost:${port}`);
+  console.log(`🚀 Serveur de production prêt sur le port ${port}`);
 });
+EOF
