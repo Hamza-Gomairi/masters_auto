@@ -104,6 +104,20 @@ app.post('/api/validate-and-generate', async (req, res) => {
     const eligibility = await checkCneEligibilityViaApoweb(formData.cne);
     const missingSemesters = eligibility.missingSemesters || [];
 
+    if (eligibility.error) {
+      await upsertAdminRecord(formData.cne, {
+        status: 'error',
+        created: false,
+        validatedSemesters: eligibility.validatedSemesters,
+        reason: eligibility.reason || 'Erreur API de vérification.'
+      }).catch(() => {});
+
+      return res.status(503).json({
+        message: "Service de vérification indisponible. Réessayez plus tard.",
+        reason: eligibility.reason || 'Erreur API de vérification.'
+      });
+    }
+
     if (eligibility.validatedSemesters < 3) {
       await upsertAdminRecord(formData.cne, {
         status: 'ineligible',
@@ -282,19 +296,55 @@ async function checkCneEligibilityViaApoweb(cne) {
       ...(apowebDispatcher ? { dispatcher: apowebDispatcher } : {})
     });
 
+    if (!resp.ok) {
+      return {
+        cne,
+        validatedSemesters: 0,
+        missingSemesters: requiredSemesters,
+        source: 'api',
+        error: true,
+        reason: `HTTP ${resp.status} depuis l'API Apoweb.`
+      };
+    }
+
     const rawText = await resp.text();
     const markerIndex = rawText.toLowerCase().indexOf('relev');
     if (markerIndex < 0) {
-      return { cne, validatedSemesters: 0, missingSemesters: requiredSemesters, source: 'api', reason: 'Réponse API inattendue (Relevé de notes introuvable).' };
+      return {
+        cne,
+        validatedSemesters: 0,
+        missingSemesters: requiredSemesters,
+        source: 'api',
+        error: true,
+        reason: 'Réponse API inattendue (Relevé de notes introuvable).'
+      };
     }
 
     const jsonText = extractJsonObjectFromText(rawText, markerIndex);
     if (!jsonText) {
-      return { cne, validatedSemesters: 0, missingSemesters: requiredSemesters, source: 'api', reason: 'JSON notes introuvable.' };
+      return {
+        cne,
+        validatedSemesters: 0,
+        missingSemesters: requiredSemesters,
+        source: 'api',
+        error: true,
+        reason: 'JSON notes introuvable.'
+      };
     }
 
     const data = JSON.parse(jsonText);
     const notes = data?.notes ? Object.values(data.notes) : [];
+
+    if (notes.length === 0) {
+      return {
+        cne,
+        validatedSemesters: 0,
+        missingSemesters: requiredSemesters,
+        source: 'api',
+        error: true,
+        reason: 'Notes introuvables dans la réponse API.'
+      };
+    }
 
     const semesterStatus = Object.fromEntries(requiredSemesters.map((s) => [s, { found: false, valid: false }]));
     for (const item of notes) {
@@ -314,7 +364,14 @@ async function checkCneEligibilityViaApoweb(cne) {
 
     return { cne, validatedSemesters, missingSemesters, source: 'api' };
   } catch (e) {
-    return { cne, validatedSemesters: 0, missingSemesters: requiredSemesters, source: 'api', reason: `Erreur API: ${e?.message || 'inconnue'}` };
+    return {
+      cne,
+      validatedSemesters: 0,
+      missingSemesters: requiredSemesters,
+      source: 'api',
+      error: true,
+      reason: `Erreur API: ${e?.message || 'inconnue'}`
+    };
   } finally {
     clearTimeout(timeoutId);
   }
