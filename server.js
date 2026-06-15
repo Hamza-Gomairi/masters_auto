@@ -4,6 +4,7 @@ import express from 'express';
 import fs from 'fs/promises';
 import path from 'path';
 import puppeteer from 'puppeteer';
+import { Agent } from 'undici';
 import { fileURLToPath } from 'url';
 
 dotenv.config();
@@ -17,6 +18,10 @@ const templatePath = path.join(__dirname, 'template_formulaire_jury.html');
 const logoPath = path.join(__dirname, 'public', 'static', 'fsjest-removebg-preview.png');
 const adminDbPath = path.join(__dirname, 'data', 'attestations.json');
 const adminUiPath = process.env.ADMIN_UI_PATH || '/admin-7f3c1b9e';
+const apowebUrl = process.env.APOWEB_URL || 'https://api-apoweb-num-ta.uae.ac.ma/api_fsjes_ta_cne.php';
+const apowebEtb = process.env.APOWEB_ETB || 'FDT';
+const apowebInsecureTls = process.env.APOWEB_INSECURE_TLS === '1';
+const apowebDispatcher = apowebInsecureTls ? new Agent({ connect: { rejectUnauthorized: false } }) : undefined;
 
 let logoDataUrlPromise;
 
@@ -96,11 +101,15 @@ app.post('/api/validate-and-generate', async (req, res) => {
       return res.status(422).json({ errors: validationErrors });
     }
 
-    const eligibility = await mockCheckApogeeEligibility(formData.cne);
+    const eligibility = await checkCneEligibilityViaApoweb(formData.cne);
+    const missingSemesters = eligibility.missingSemesters || [];
 
     if (eligibility.validatedSemesters < 3) {
       await upsertAdminRecord(formData.cne, {
-        status: 'ineligible', created: false, validatedSemesters: eligibility.validatedSemesters, reason: "Moins de 3 semestres"
+        status: 'ineligible',
+        created: false,
+        validatedSemesters: eligibility.validatedSemesters,
+        reason: missingSemesters.length > 0 ? `Semestres non validés: ${missingSemesters.join(', ')}` : (eligibility.reason || 'Moins de 3 semestres')
       }).catch(() => {});
       return res.status(400).json({ message: "Tu n'as pas validé les 3 semestres" });
     }
@@ -221,10 +230,94 @@ function validateFormData(data) {
   return errors;
 }
 
-async function mockCheckApogeeEligibility(apogee) {
-  const lastDigit = Number(apogee.replace(/\D/g, '').slice(-1));
-  const validatedSemesters = Number.isNaN(lastDigit) ? 4 : Math.min(4, lastDigit);
-  return { apogee, validatedSemesters, source: 'mock' };
+function extractJsonObjectFromText(text, startIndex) {
+  let i = startIndex;
+  while (i < text.length && text[i] !== '{') i += 1;
+  if (i >= text.length) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let j = i; j < text.length; j += 1) {
+    const ch = text[j];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === '\\') {
+        escaped = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+    if (ch === '{') depth += 1;
+    if (ch === '}') depth -= 1;
+
+    if (depth === 0) {
+      return text.slice(i, j + 1);
+    }
+  }
+
+  return null;
+}
+
+async function checkCneEligibilityViaApoweb(cne) {
+  const requiredSemesters = ['SE07', 'SE08', 'SE09'];
+  const url = new URL(apowebUrl);
+  url.searchParams.set('apogee', String(cne));
+  url.searchParams.set('etb', apowebEtb);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+  try {
+    const resp = await fetch(url, {
+      signal: controller.signal,
+      ...(apowebDispatcher ? { dispatcher: apowebDispatcher } : {})
+    });
+
+    const rawText = await resp.text();
+    const markerIndex = rawText.toLowerCase().indexOf('relev');
+    if (markerIndex < 0) {
+      return { cne, validatedSemesters: 0, missingSemesters: requiredSemesters, source: 'api', reason: 'Réponse API inattendue (Relevé de notes introuvable).' };
+    }
+
+    const jsonText = extractJsonObjectFromText(rawText, markerIndex);
+    if (!jsonText) {
+      return { cne, validatedSemesters: 0, missingSemesters: requiredSemesters, source: 'api', reason: 'JSON notes introuvable.' };
+    }
+
+    const data = JSON.parse(jsonText);
+    const notes = data?.notes ? Object.values(data.notes) : [];
+
+    const semesterStatus = Object.fromEntries(requiredSemesters.map((s) => [s, { found: false, valid: false }]));
+    for (const item of notes) {
+      const code = String(item?.cod_nel || '').trim().toUpperCase();
+      if (!semesterStatus[code] || semesterStatus[code].found) continue;
+
+      const codTre = String(item?.cod_tre || '').trim().toUpperCase();
+      const libTre = String(item?.lib_tre || '').toLowerCase();
+      const libTreArb = String(item?.lib_tre_arb || '').toLowerCase();
+
+      const valid = codTre === 'V' || codTre === 'VAR' || libTre.includes('valide') || libTreArb.includes('valide');
+      semesterStatus[code] = { found: true, valid };
+    }
+
+    const missingSemesters = requiredSemesters.filter((s) => !semesterStatus[s].valid);
+    const validatedSemesters = requiredSemesters.length - missingSemesters.length;
+
+    return { cne, validatedSemesters, missingSemesters, source: 'api' };
+  } catch (e) {
+    return { cne, validatedSemesters: 0, missingSemesters: requiredSemesters, source: 'api', reason: `Erreur API: ${e?.message || 'inconnue'}` };
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 async function renderTemplate(data) {
