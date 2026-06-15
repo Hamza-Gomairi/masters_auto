@@ -6,7 +6,7 @@
     <style>
         @page {
             size: A4;
-            margin: 18mm 13mm;
+            margin: 16mm 12mm;
             background-color: #ffffff;
             @bottom-left {
                 content: "تم إنشاؤه عبر master-fsjest.uae.ac.ma — مرجع [DYNAMIC_ATTESTATION_CODE]";
@@ -21,31 +21,31 @@
         }
 
         body {
-            font-family: "Times New Roman", Times, serif;
+            font-family: "Segoe UI", Tahoma, Arial, "Noto Naskh Arabic", "Noto Kufi Arabic", sans-serif;
             margin: 0;
             padding: 0;
             color: #000000;
-            line-height: 1.3;
-            font-size: 11pt;
+            line-height: 1.25;
+            font-size: 10.5pt;
             direction: rtl;
         }
 
         .header-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 18px;
+            margin-bottom: 12px;
         }
 
         .header-table td {
             vertical-align: middle;
             border: 1px solid #000000;
-            padding: 10px;
+            padding: 6px;
             text-align: center;
         }
 
         .header-left {
             width: 35%;
-            font-size: 10pt;
+            font-size: 9pt;
             font-weight: bold;
             direction: ltr;
             font-family: Arial, sans-serif;
@@ -56,7 +56,7 @@
         }
 
         .header-center img {
-            max-height: 105px;
+            max-height: 85px;
             width: auto;
             display: block;
             margin: 0 auto;
@@ -64,7 +64,7 @@
 
         .header-right {
             width: 35%;
-            font-size: 11pt;
+            font-size: 10pt;
             font-weight: bold;
             direction: rtl;
         }
@@ -74,7 +74,7 @@
             text-align: left;
             font-weight: normal;
             font-size: 9.5pt;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             padding-left: 5px;
             direction: ltr;
             font-family: Arial, sans-serif;
@@ -82,7 +82,7 @@
 
         .date-section {
             text-align: right;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             font-weight: bold;
             padding-right: 5px;
         }
@@ -91,39 +91,39 @@
             text-align: center;
             font-weight: bold;
             font-size: 12pt;
-            margin-bottom: 18px;
-            line-height: 1.6;
+            margin-bottom: 12px;
+            line-height: 1.5;
         }
 
         .object-section {
             text-align: center;
             font-weight: bold;
             font-size: 12pt;
-            margin-bottom: 18px;
+            margin-bottom: 12px;
         }
 
         .object-box {
             display: inline-block;
             border: 1.5px solid #000000;
-            padding: 6px 20px;
+            padding: 5px 16px;
             border-radius: 4px;
             background-color: #f9f9f9;
         }
 
         .intro-text {
-            margin-bottom: 14px;
-            font-size: 11pt;
-            line-height: 1.8;
+            margin-bottom: 10px;
+            font-size: 10.5pt;
+            line-height: 1.6;
         }
 
         .info-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 14px;
+            margin-bottom: 10px;
         }
 
         .info-table td {
-            padding: 6px 4px;
+            padding: 4px 4px;
             vertical-align: bottom;
         }
 
@@ -140,13 +140,13 @@
         }
 
         .filled-value {
-            font-family: "Times New Roman", Times, serif;
-            font-style: italic;
+            font-family: Arial, sans-serif;
+            font-style: normal;
         }
 
         .theme-section {
             margin-top: 10px;
-            margin-bottom: 14px;
+            margin-bottom: 10px;
         }
 
         .theme-title {
@@ -156,23 +156,23 @@
 
         .direction-section {
             font-weight: bold;
-            margin-bottom: 18px;
+            margin-bottom: 12px;
         }
 
         .jury-title {
             font-weight: bold;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
         .jury-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 18px;
+            margin-bottom: 12px;
             line-height: 1.1;
         }
 
         .jury-table td {
-            padding: 4px 4px;
+            padding: 3px 4px;
             vertical-align: bottom;
         }
 
@@ -197,7 +197,7 @@
         .salutation {
             text-align: center;
             font-weight: bold;
-            margin-bottom: 18px;
+            margin-bottom: 12px;
             font-size: 11pt;
         }
 
@@ -205,6 +205,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 10px;
+            page-break-inside: avoid;
         }
 
         .signature-table td {
@@ -213,14 +214,15 @@
             font-weight: bold;
             font-size: 11pt;
             vertical-align: top;
-            padding-bottom: 28px;
+            padding-bottom: 18px;
         }
 
         .doyen-row {
             text-align: center;
             font-weight: bold;
             font-size: 11pt;
-            margin-top: 10px;
+            margin-top: 6px;
+            page-break-inside: avoid;
         }
     </style>
 </head>
@@ -262,7 +264,7 @@
     <div class="object-section">
         <div class="object-box">
             الموضوع : اقتراح تعيين أعضاء لجنة المناقشة<br>
-            <span style="font-size: 10pt; font-weight: normal;">الماستر : [DYNAMIC_MASTER_NAME]</span>
+            <span style="font-size: 10pt; font-weight: normal;">الماستر : <span class="filled-value">[DYNAMIC_MASTER_NAME]</span></span>
         </div>
     </div>
 

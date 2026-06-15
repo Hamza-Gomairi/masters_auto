@@ -131,6 +131,13 @@ app.post('/api/validate-and-generate', async (req, res) => {
       return res.status(400).json({ message: "Tu n'as pas validé les 3 semestres" });
     }
 
+    await upsertAdminRecord(formData.cne, {
+      status: 'pending',
+      created: false,
+      validatedSemesters: eligibility.validatedSemesters,
+      reason: 'Génération en cours.'
+    }).catch(() => {});
+
     const html = await renderTemplate(formData);
     const pdf = await generatePdf(html);
     const fileName = `proposition-jury-${safeFileName(formData.cne)}.pdf`;
