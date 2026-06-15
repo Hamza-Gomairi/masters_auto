@@ -50,6 +50,34 @@
       padding: 28px;
       background: linear-gradient(135deg, var(--primary), var(--primary-dark));
       color: #ffffff;
+      position: relative;
+    }
+
+    .lang-toggle {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      display: inline-flex;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(4px);
+    }
+
+    .lang-toggle button {
+      border: 0;
+      background: transparent;
+      color: #ffffff;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .lang-toggle button.active {
+      background: rgba(255, 255, 255, 0.22);
     }
 
     .hero h1 {
@@ -175,58 +203,64 @@
   <main class="page">
     <section class="card">
       <header class="hero">
-        <h1>Proposition de membres de Jury</h1>
-        <p>FSJES Tanger — génération automatique du formulaire officiel après vérification de l'éligibilité académique.</p>
+        <div class="lang-toggle" aria-label="Choix de langue">
+          <button type="button" id="langFr" class="active" aria-pressed="true">FR</button>
+          <button type="button" id="langAr" aria-pressed="false">العربية</button>
+        </div>
+
+        <h1 id="pageTitle">Proposition de membres de Jury</h1>
+        <p id="pageSubtitle">FSJES Tanger — génération automatique du formulaire officiel après vérification de l'éligibilité académique.</p>
       </header>
 
       <form id="juryForm">
+        <input id="lang" name="lang" type="hidden" value="fr">
         <div class="grid">
           <div class="field">
-            <label for="nom">Nom *</label>
+            <label for="nom" id="labelNom">Nom *</label>
             <input id="nom" name="nom" type="text" autocomplete="family-name" required>
           </div>
 
           <div class="field">
-            <label for="prenom">Prénom *</label>
+            <label for="prenom" id="labelPrenom">Prénom *</label>
             <input id="prenom" name="prenom" type="text" autocomplete="given-name" required>
           </div>
 
           <div class="field">
-            <label for="cne">CNE *</label>
+            <label for="cne" id="labelCne">CNE *</label>
             <input id="cne" name="cne" type="text" required>
           </div>
 
           <div class="field">
-            <label for="telephone">N° de téléphone *</label>
+            <label for="telephone" id="labelTelephone">N° de téléphone *</label>
             <input id="telephone" name="telephone" type="tel" autocomplete="tel" required>
           </div>
 
           <div class="field full">
-            <label for="email">Email institutionnel</label>
+            <label for="email" id="labelEmail">Email institutionnel</label>
             <input id="email" name="email" type="email" placeholder="exemple@etu.uae.ac.ma" autocomplete="email">
           </div>
 
           <div class="field full">
-            <label for="master">Nom du Master *</label>
+            <label for="master" id="labelMaster">Nom du Master *</label>
             <select id="master" name="master" required>
               <option value="">Chargement des masters...</option>
             </select>
           </div>
 
           <div class="field full">
-            <label for="professeur">Professeur responsable *</label>
+            <label for="professeur" id="labelProfesseur">Professeur responsable *</label>
             <input id="professeur" name="professeur" type="text" required>
           </div>
 
           <div class="field full">
-            <label for="theme">Mémoire du Master sous le thème *</label>
+            <label for="theme" id="labelTheme">Mémoire du Master sous le thème *</label>
             <input id="theme" name="theme" type="text" required>
           </div>
         </div>
 
         <div class="actions">
           <button id="submitButton" type="submit">Valider et télécharger le PDF</button>
-          <span class="hint">Le PDF est téléchargé immédiatement si l'étudiant est éligible.</span>
+          <span class="hint" id="downloadHint">Le PDF est téléchargé immédiatement si l'étudiant est éligible.</span>
         </div>
 
         <div id="message" class="message" role="status" aria-live="polite"></div>
@@ -239,8 +273,29 @@
     const message = document.getElementById('message');
     const submitButton = document.getElementById('submitButton');
     const masterSelect = document.getElementById('master');
+    const langInput = document.getElementById('lang');
+    const langFr = document.getElementById('langFr');
+    const langAr = document.getElementById('langAr');
+
+    const pageTitle = document.getElementById('pageTitle');
+    const pageSubtitle = document.getElementById('pageSubtitle');
+    const downloadHint = document.getElementById('downloadHint');
+
+    const labelNom = document.getElementById('labelNom');
+    const labelPrenom = document.getElementById('labelPrenom');
+    const labelCne = document.getElementById('labelCne');
+    const labelTelephone = document.getElementById('labelTelephone');
+    const labelEmail = document.getElementById('labelEmail');
+    const labelMaster = document.getElementById('labelMaster');
+    const labelProfesseur = document.getElementById('labelProfesseur');
+    const labelTheme = document.getElementById('labelTheme');
 
     loadMasters();
+
+    langFr.addEventListener('click', () => setLanguage('fr'));
+    langAr.addEventListener('click', () => setLanguage('ar'));
+
+    setLanguage(langInput.value || 'fr');
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -280,12 +335,12 @@
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
-        showMessage('PDF généré et téléchargé avec succès.', 'success');
+        showMessage(getUiText('success_download'), 'success');
       } catch (error) {
-        showMessage('Impossible de contacter le serveur. Vérifiez que le backend est lancé.', 'error');
+        showMessage(getUiText('error_contact'), 'error');
       } finally {
         submitButton.disabled = false;
-        submitButton.textContent = 'Valider et télécharger le PDF';
+        submitButton.textContent = getUiText('submit');
       }
     });
 
@@ -309,6 +364,75 @@
     function showMessage(text, type) {
       message.textContent = text;
       message.className = `message ${type}`;
+    }
+
+    function setLanguage(lang) {
+      const normalized = lang === 'ar' ? 'ar' : 'fr';
+      langInput.value = normalized;
+
+      langFr.classList.toggle('active', normalized === 'fr');
+      langAr.classList.toggle('active', normalized === 'ar');
+      langFr.setAttribute('aria-pressed', String(normalized === 'fr'));
+      langAr.setAttribute('aria-pressed', String(normalized === 'ar'));
+
+      document.documentElement.lang = normalized;
+      document.documentElement.dir = normalized === 'ar' ? 'rtl' : 'ltr';
+
+      pageTitle.textContent = getUiText('title', normalized);
+      pageSubtitle.textContent = getUiText('subtitle', normalized);
+      downloadHint.textContent = getUiText('download_hint', normalized);
+
+      labelNom.textContent = getUiText('label_nom', normalized);
+      labelPrenom.textContent = getUiText('label_prenom', normalized);
+      labelCne.textContent = getUiText('label_cne', normalized);
+      labelTelephone.textContent = getUiText('label_tel', normalized);
+      labelEmail.textContent = getUiText('label_email', normalized);
+      labelMaster.textContent = getUiText('label_master', normalized);
+      labelProfesseur.textContent = getUiText('label_prof', normalized);
+      labelTheme.textContent = getUiText('label_theme', normalized);
+      submitButton.textContent = getUiText('submit', normalized);
+
+      clearMessage();
+    }
+
+    function getUiText(key, lang) {
+      const normalized = lang === 'ar' ? 'ar' : 'fr';
+      const dict = {
+        fr: {
+          title: 'Proposition de membres de Jury',
+          subtitle: "FSJES Tanger — génération automatique du formulaire officiel après vérification de l'éligibilité académique.",
+          download_hint: "Le PDF est téléchargé immédiatement si l'étudiant est éligible.",
+          label_nom: 'Nom *',
+          label_prenom: 'Prénom *',
+          label_cne: 'CNE *',
+          label_tel: 'N° de téléphone *',
+          label_email: 'Email institutionnel',
+          label_master: 'Nom du Master *',
+          label_prof: 'Professeur responsable *',
+          label_theme: 'Mémoire du Master sous le thème *',
+          submit: 'Valider et télécharger le PDF',
+          success_download: 'PDF généré et téléchargé avec succès.',
+          error_contact: 'Impossible de contacter le serveur. Vérifiez que le backend est lancé.'
+        },
+        ar: {
+          title: 'اقتراح تعيين أعضاء لجنة المناقشة',
+          subtitle: 'كلية العلوم القانونية والاقتصادية والاجتماعية بطنجة — إنشاء تلقائي للاستمارة الرسمية بعد التحقق من الأهلية الدراسية.',
+          download_hint: 'يتم تنزيل ملف PDF مباشرة إذا كان الطالب مؤهلاً.',
+          label_nom: 'النسب *',
+          label_prenom: 'الاسم *',
+          label_cne: 'رقم التسجيل (CNE) *',
+          label_tel: 'رقم الهاتف *',
+          label_email: 'البريد الإلكتروني الجامعي',
+          label_master: 'اسم الماستر *',
+          label_prof: 'الأستاذ المسؤول *',
+          label_theme: 'موضوع مذكرة الماستر *',
+          submit: 'تحقق وتحميل PDF',
+          success_download: 'تم إنشاء ملف PDF وتنزيله بنجاح.',
+          error_contact: 'تعذر الاتصال بالخادم. تأكد من تشغيل الخادم الخلفي.'
+        }
+      };
+
+      return dict[normalized][key] || dict.fr[key] || '';
     }
 
     function clearMessage() {

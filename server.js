@@ -4,7 +4,6 @@ import express from 'express';
 import fs from 'fs/promises';
 import path from 'path';
 import puppeteer from 'puppeteer';
-import { Agent } from 'undici';
 import { fileURLToPath } from 'url';
 
 dotenv.config();
@@ -15,13 +14,17 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = process.env.PORT || 3000;
 const templatePath = path.join(__dirname, 'template_formulaire_jury.html');
+const templateArPath = path.join(__dirname, 'template_formulaire_jury_ar.html');
 const logoPath = path.join(__dirname, 'public', 'static', 'fsjest-removebg-preview.png');
 const adminDbPath = path.join(__dirname, 'data', 'attestations.json');
 const adminUiPath = process.env.ADMIN_UI_PATH || '/admin-7f3c1b9e';
 const apowebUrl = process.env.APOWEB_URL || 'https://api-apoweb-num-ta.uae.ac.ma/api_fsjes_ta_cne.php';
 const apowebEtb = process.env.APOWEB_ETB || 'FDT';
 const apowebInsecureTls = process.env.APOWEB_INSECURE_TLS === '1';
-const apowebDispatcher = apowebInsecureTls ? new Agent({ connect: { rejectUnauthorized: false } }) : undefined;
+
+if (apowebInsecureTls) {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+}
 
 let logoDataUrlPromise;
 
@@ -219,7 +222,8 @@ function normalizeFormData(body) {
     email: String(body.email || '').trim().toLowerCase(),
     master: String(body.master || '').trim(),
     professeur: String(body.professeur || '').trim(),
-    theme: String(body.theme || '').trim()
+    theme: String(body.theme || '').trim(),
+    lang: String(body.lang || '').trim().toLowerCase()
   };
 }
 
@@ -292,8 +296,7 @@ async function checkCneEligibilityViaApoweb(cne) {
 
   try {
     const resp = await fetch(url, {
-      signal: controller.signal,
-      ...(apowebDispatcher ? { dispatcher: apowebDispatcher } : {})
+      signal: controller.signal
     });
 
     if (!resp.ok) {
@@ -378,7 +381,9 @@ async function checkCneEligibilityViaApoweb(cne) {
 }
 
 async function renderTemplate(data) {
-  const template = await fs.readFile(templatePath, 'utf8');
+  const lang = String(data.lang || '').toLowerCase();
+  const selectedTemplatePath = lang === 'ar' ? templateArPath : templatePath;
+  const template = await fs.readFile(selectedTemplatePath, 'utf8');
   const fullName = `${data.nom} ${data.prenom}`.trim();
   const today = new Intl.DateTimeFormat('fr-FR').format(new Date());
   const logoDataUrl = await loadLogoDataUrl();
