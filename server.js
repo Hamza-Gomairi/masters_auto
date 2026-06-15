@@ -1,4 +1,3 @@
-cat << 'EOF' > server.js
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
@@ -203,7 +202,7 @@ function normalizeFormData(body) {
 
 function validateFormData(data) {
   const errors = [];
-  const emailPattern = /^[a-zA-Z0-9._%++-]@etu\.uae\.ac\.ma$/;
+  const emailPattern = /^[a-zA-Z0-9._%+-]+@etu\.uae\.ac\.ma$/;
 
   if (!data.nom) errors.push('Le nom est obligatoire.');
   if (!data.prenom) errors.push('Le prénom est obligatoire.');
@@ -266,18 +265,23 @@ async function loadLogoDataUrl() {
 async function generatePdf(html) {
   let browser;
   try {
-    browser = await puppeteer.launch({
+    const isLinux = process.platform === 'linux';
+
+    const launchOptions = {
       headless: 'new',
-      executablePath: '/usr/bin/chromium-browser',
       args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
-        '--no-zygote',
-        '--single-process'
+        ...(isLinux ? ['--no-sandbox', '--disable-setuid-sandbox', '--no-zygote', '--single-process'] : [])
       ]
-    });
+    };
+
+    const envExecutablePath = process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_BIN;
+    if (envExecutablePath) {
+      launchOptions.executablePath = envExecutablePath;
+    }
+
+    browser = await puppeteer.launch(launchOptions);
 
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -306,4 +310,3 @@ function safeFileName(value) {
 app.listen(port, () => {
   console.log(`🚀 Serveur de production prêt sur le port ${port}`);
 });
-EOF
