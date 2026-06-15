@@ -73,7 +73,7 @@ app.get('/api/masters', (req, res) => {
 
 app.get('/api/admin/attestation-status', async (req, res) => {
   try {
-    const cne = String(req.query.cne || req.query.apogee || '').trim();
+    const cne = normalizeCne(req.query.cne || req.query.apogee || '');
     if (!cne) return res.status(400).json({ message: 'Le CNE est obligatoire.' });
 
     const record = await getAdminRecord(cne);
@@ -220,11 +220,15 @@ async function writeAdminDb(db) {
   await fs.writeFile(adminDbPath, JSON.stringify(db, null, 2), 'utf8');
 }
 
+function normalizeCne(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
 function normalizeFormData(body) {
   return {
     nom: String(body.nom || '').trim(),
     prenom: String(body.prenom || '').trim(),
-    cne: String(body.cne || body.apogee || '').trim(),
+    cne: normalizeCne(body.cne || body.apogee || ''),
     telephone: String(body.telephone || '').trim(),
     email: String(body.email || '').trim().toLowerCase(),
     master: String(body.master || '').trim(),
@@ -293,9 +297,10 @@ function extractJsonObjectFromText(text, startIndex) {
 }
 
 async function checkCneEligibilityViaApoweb(cne) {
+  const normalizedCne = normalizeCne(cne);
   const requiredSemesters = ['SE07', 'SE08', 'SE09'];
   const url = new URL(apowebUrl);
-  url.searchParams.set('apogee', String(cne));
+  url.searchParams.set('apogee', normalizedCne);
   url.searchParams.set('etb', apowebEtb);
 
   const controller = new AbortController();
@@ -308,7 +313,7 @@ async function checkCneEligibilityViaApoweb(cne) {
 
     if (!resp.ok) {
       return {
-        cne,
+        cne: normalizedCne,
         validatedSemesters: 0,
         missingSemesters: requiredSemesters,
         source: 'api',
@@ -321,7 +326,7 @@ async function checkCneEligibilityViaApoweb(cne) {
     const markerIndex = rawText.toLowerCase().indexOf('relev');
     if (markerIndex < 0) {
       return {
-        cne,
+        cne: normalizedCne,
         validatedSemesters: 0,
         missingSemesters: requiredSemesters,
         source: 'api',
@@ -333,7 +338,7 @@ async function checkCneEligibilityViaApoweb(cne) {
     const jsonText = extractJsonObjectFromText(rawText, markerIndex);
     if (!jsonText) {
       return {
-        cne,
+        cne: normalizedCne,
         validatedSemesters: 0,
         missingSemesters: requiredSemesters,
         source: 'api',
@@ -347,7 +352,7 @@ async function checkCneEligibilityViaApoweb(cne) {
 
     if (notes.length === 0) {
       return {
-        cne,
+        cne: normalizedCne,
         validatedSemesters: 0,
         missingSemesters: requiredSemesters,
         source: 'api',
@@ -372,10 +377,10 @@ async function checkCneEligibilityViaApoweb(cne) {
     const missingSemesters = requiredSemesters.filter((s) => !semesterStatus[s].valid);
     const validatedSemesters = requiredSemesters.length - missingSemesters.length;
 
-    return { cne, validatedSemesters, missingSemesters, source: 'api' };
+    return { cne: normalizedCne, validatedSemesters, missingSemesters, source: 'api' };
   } catch (e) {
     return {
-      cne,
+      cne: normalizedCne,
       validatedSemesters: 0,
       missingSemesters: requiredSemesters,
       source: 'api',
