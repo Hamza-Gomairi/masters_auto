@@ -36,6 +36,7 @@ const masters = [
   "Intelligence Artificielle pour l'Economie Numérique et la Gestion",
   'DROIT PUBLIC DES AFFAIRES ET DE COMMERCE INTERNATIONAL',
   'Droit international public',
+  'Droit Administratif, Constitutionnel, Gouvernance Territoriale Et Développement Durable',
   'DROIT DES AFFAIRES ET E.BUSINESS',
   'القانون والعلوم الإدارية والمالية للتنمية',
   'حقوق الإنسان والتقاضي الدولي',
@@ -87,6 +88,37 @@ app.get('/api/admin/attestation-status', async (req, res) => {
   } catch (error) {
     console.error('Erreur /api/admin/attestation-status:', error);
     return res.status(500).json({ message: 'Erreur interne.' });
+  }
+});
+
+app.post('/api/test-generate-ar', async (req, res) => {
+  try {
+    const formData = normalizeFormData(req.body);
+    formData.lang = 'ar';
+    formData.attestationCode = '27';
+
+    const validationErrors = validateTestFormData(formData);
+    if (validationErrors.length > 0) {
+      return res.status(422).json({ message: validationErrors.join(' ') });
+    }
+
+    const html = await renderTemplate(formData);
+    const pdf = await generatePdf(html);
+    const fileName = `proposition-jury-${safeFileName(formData.cne)}.pdf`;
+
+    res.writeHead(200, {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${fileName}"`,
+      'Content-Length': pdf.length,
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+
+    return res.end(pdf);
+  } catch (error) {
+    console.error('Erreur /api/test-generate-ar:', error);
+    return res.status(500).json({ message: 'Erreur lors de la génération du PDF.' });
   }
 });
 
@@ -259,6 +291,20 @@ function validateFormData(data) {
   return errors;
 }
 
+function validateTestFormData(data) {
+  const errors = [];
+
+  if (!data.nom) errors.push('Le nom est obligatoire.');
+  if (!data.prenom) errors.push('Le prénom est obligatoire.');
+  if (!data.cne) errors.push('Le CNE est obligatoire.');
+  if (!data.telephone) errors.push('Le numéro de téléphone est obligatoire.');
+  if (!data.master) errors.push('Le nom du Master est obligatoire.');
+  if (!data.professeur) errors.push('Le nom du Professeur responsable est obligatoire.');
+  if (!data.theme) errors.push('Le thème du mémoire est obligatoire.');
+
+  return errors;
+}
+
 function extractJsonObjectFromText(text, startIndex) {
   let i = startIndex;
   while (i < text.length && text[i] !== '{') i += 1;
@@ -400,11 +446,14 @@ async function renderTemplate(data) {
   const today = new Intl.DateTimeFormat('fr-FR').format(new Date());
   const logoDataUrl = await loadLogoDataUrl();
 
-  let attestationCode = "1";
-  try {
-    const db = await readAdminDb();
-    attestationCode = db.records?.[data.cne]?.attestationCode || String(db.nextId || 1);
-  } catch {}
+  let attestationCode = String(data.attestationCode || '').trim();
+  if (!attestationCode) {
+    attestationCode = "1";
+    try {
+      const db = await readAdminDb();
+      attestationCode = db.records?.[data.cne]?.attestationCode || String(db.nextId || 1);
+    } catch {}
+  }
 
   return template
     .replaceAll('[DYNAMIC_LOGO_SRC]', logoDataUrl)
