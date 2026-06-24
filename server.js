@@ -95,7 +95,7 @@ app.post('/api/test-generate-ar', async (req, res) => {
   try {
     const formData = normalizeFormData(req.body);
     formData.lang = 'ar';
-    formData.attestationCode = '27';
+    formData.attestationCode = '311';
 
     const validationErrors = validateTestFormData(formData);
     if (validationErrors.length > 0) {
@@ -413,10 +413,7 @@ async function checkCneEligibilityViaApoweb(cne) {
       if (!semesterStatus[code] || semesterStatus[code].found) continue;
 
       const codTre = String(item?.cod_tre || '').trim().toUpperCase();
-      const libTre = String(item?.lib_tre || '').toLowerCase();
-      const libTreArb = String(item?.lib_tre_arb || '').toLowerCase();
-
-      const valid = codTre === 'V' || codTre === 'VAR' || libTre.includes('valide') || libTreArb.includes('valide');
+      const valid = codTre === 'V' || codTre === 'VAR';
       semesterStatus[code] = { found: true, valid };
     }
 
